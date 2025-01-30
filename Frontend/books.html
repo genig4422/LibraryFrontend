@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Library System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="books.html">Books</a></li>
+                    <li class="nav-item"><a class="nav-link" href="authors.html">Authors</a></li>
+                    <li class="nav-item"><a class="nav-link" href="members.html">Members</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Books</h1>
+
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <input type="text" id="searchBar" class="form-control" placeholder="Search by title, category, or author">
+            </div>
+            <div class="col-md-3">
+                <select id="filterCategory" class="form-select">
+                    <option value="">Filter by Category</option>
+                    <!-- Categories will be dynamically loaded -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterPublisher" class="form-select">
+                    <option value="">Filter by Publisher</option>
+                    <!-- Publishers will be dynamically loaded -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Books Table -->
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Author</th>
+                    <th>Publisher</th>
+                    <th>ISBN</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="booksTable">
+                <!-- Books data will be dynamically loaded here -->
+            </tbody>
+        </table>
+
+        <!-- Add Book Button -->
+        <div class="mt-3">
+            <a href="add_book.html" class="btn btn-primary">Add New Book</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+   
+        // Fetch and display books data
+        async function loadBooks() {
+    try {
+        const response = await fetch('http://localhost:5196/api/Books/get-all-books'); // Replace with your API endpoint
+
+        // Check if the response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const books = await response.json();
+        const booksTable = document.getElementById('booksTable');
+
+        // Populate table with books data
+        booksTable.innerHTML = books.map(book => `
+            <tr>
+                <td>${book.title || 'N/A'}</td>
+                <td>${book.category?.name || 'N/A'}</td>
+                <td>${book.book_Authors?.map(author => author.name).join(', ') || 'N/A'}</td>
+                <td>${book.publisher?.name || 'N/A'}</td>
+                <td>${book.isbn || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="editBook(${book.id})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteBook(${book.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading books:', error);
+        alert('Failed to load books. Please try again later.');
+    }
+}
+
+        // Load categories and publishers for filters
+        async function loadFilters() {
+            const categoriesResponse = await fetch('https://your-api-endpoint/categories');
+            const publishersResponse = await fetch('https://your-api-endpoint/publishers');
+
+            const categories = await categoriesResponse.json();
+            const publishers = await publishersResponse.json();
+
+            const categorySelect = document.getElementById('filterCategory');
+            const publisherSelect = document.getElementById('filterPublisher');
+
+            categorySelect.innerHTML += categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
+            publisherSelect.innerHTML += publishers.map(publisher => `<option value="${publisher.id}">${publisher.name}</option>`).join('');
+        }
+
+        // Event handlers for edit and delete
+        function editBook(bookId) {
+            // Redirect to edit book page with the bookId
+            window.location.href = `edit_book.html?bookId=${bookId}`;
+        }
+
+        async function deleteBook(bookId) {
+            if (confirm('Are you sure you want to delete this book?')) {
+                await fetch(`https://your-api-endpoint/books/${bookId}`, { method: 'DELETE' });
+                loadBooks(); // Refresh books list
+            }
+        }
+
+        // Initialize page
+        loadBooks();
+        loadFilters();
+    </script>
+</body>
+</html>
