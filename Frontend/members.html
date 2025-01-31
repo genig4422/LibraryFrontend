@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Library System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+        
+                    <li class="nav-item"><a class="nav-link active" href="books.html">Books</a></li>
+                    <li class="nav-item"><a class="nav-link" href="borrowedbooks.html">Borrowed Books</a></li>
+                    <li class="nav-item"><a class="nav-link" href="members.html">Members</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Members</h1>
+
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <input type="text" id="searchBar" class="form-control" placeholder="Search by name or email">
+            </div>
+        </div>
+
+        <!-- Members Table -->
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="membersTable">
+                <!-- Members data will be dynamically loaded here -->
+            </tbody>
+        </table>
+
+        <!-- Bootstrap Modal for Editing Member -->
+        <div class="modal fade" id="editMemberModal" tabindex="-1" aria-labelledby="editMemberModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editMemberModalLabel">Edit Member</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editMemberForm" class="needs-validation" novalidate>
+                            <input type="hidden" id="editMemberId">
+                            
+                            <div class="mb-3">
+                                <label for="editName" class="form-label">Name:</label>
+                                <input type="text" id="editName" name="name" class="form-control" required>
+                                <div class="invalid-feedback">Please enter the member name.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email:</label>
+                                <input type="email" id="editEmail" name="email" class="form-control" required>
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editPhone" class="form-label">Phone:</label>
+                                <input type="text" id="editPhone" name="phone" class="form-control" required>
+                                <div class="invalid-feedback">Please enter the phone number.</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Update Member</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Member Modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+            Add Member
+        </button>
+
+        <div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addMemberModalLabel">Add New Member</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addMemberForm">
+                            <div class="mb-3">
+                                <label for="memberName" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="memberName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="memberEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="memberEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="memberPhone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="memberPhone" required>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="submitMember()">Add Member</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap Toast Notification -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="updateToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body" id="toastMessage"></div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let members = [];
+
+        // Fetch and display members data
+        async function loadMembers() {
+            try {
+                const response = await fetch('http://localhost:5196/api/Members/show-all-members'); // Replace with your API endpoint
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                members = await response.json();
+                const membersTable = document.getElementById('membersTable');
+
+                membersTable.innerHTML = members.map(member => `
+                    <tr>
+                        <td>${member.name || 'N/A'}</td>
+                        <td>${member.email || 'N/A'}</td>
+                        <td>${member.phone || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editMember(${member.id})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteMember(${member.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading members:', error);
+                alert('Failed to load members. Please try again later.');
+            }
+        }
+
+        // Function to submit new member data
+        function submitMember() {
+            const memberName = document.getElementById('memberName').value;
+            const memberEmail = document.getElementById('memberEmail').value;
+            const memberPhone = document.getElementById('memberPhone').value;
+           
+
+            if (!memberName || !memberEmail || !memberPhone) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            const memberData = {
+                name: memberName,
+                email: memberEmail,
+                phone: memberPhone,
+              
+            };
+
+            fetch('http://localhost:5196/api/Members/add-member', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(memberData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    loadMembers(); // Refresh member list
+                    alert('Member added successfully!');
+                } else {
+                    alert('Failed to add member.');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding member:', error);
+                alert('Error adding member. Please try again.');
+            });
+        }
+
+        // Function to edit member data
+        async function editMember(memberId) {
+            try {
+                const response = await fetch(`http://localhost:5196/api/Members/get-member-by-id/${memberId}`);
+                if (!response.ok) throw new Error("Failed to fetch member data.");
+
+                const member = await response.json();
+
+                document.getElementById("editMemberId").value = member.id;
+                document.getElementById("editName").value = member.name || "";
+                document.getElementById("editEmail").value = member.email || "";
+                document.getElementById("editPhone").value = member.phone || "";
+
+                const editModal = new bootstrap.Modal(document.getElementById("editMemberModal"));
+                editModal.show();
+            } catch (error) {
+                console.error('Error fetching member data:', error);
+                alert('Failed to load member data for editing.');
+            }
+        }
+
+        // Function to update member data
+        async function updateMember(event) {
+            event.preventDefault();
+
+            const memberId = document.getElementById("editMemberId").value;
+            const updatedMember = {
+                id: memberId,
+                name: document.getElementById("editName").value,
+                email: document.getElementById("editEmail").value,
+                phone: document.getElementById("editPhone").value
+            };
+
+            try {
+                const response = await fetch(`http://localhost:5196/api/Members/update-member/${memberId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedMember)
+                });
+
+                if (response.ok) {
+                    loadMembers();
+                    const toast = new bootstrap.Toast(document.getElementById('updateToast'));
+                    document.getElementById('toastMessage').innerText = "Member updated successfully!";
+                    toast.show();
+                    const editModal = bootstrap.Modal.getInstance(document.getElementById('editMemberModal'));
+                    editModal.hide();
+                } else {
+                    alert('Failed to update member.');
+                }
+            } catch (error) {
+                console.error('Error updating member:', error);
+                alert('Error updating member. Please try again.');
+            }
+        }
+
+        // Delete member
+        async function deleteMember(memberId) {
+            const confirmation = confirm("Are you sure you want to delete this member?");
+            if (!confirmation) return;
+
+            try {
+                const response = await fetch(`http://localhost:5196/api/Members/remove-member-by-id/${memberId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadMembers(); // Refresh the member list after deletion
+                    alert('Member deleted successfully!');
+                } else {
+                    alert('Failed to delete member.');
+                }
+            } catch (error) {
+                console.error('Error deleting member:', error);
+                alert('Failed to delete member. Please try again later.');
+            }
+        }
+
+        // Load members on page load
+        loadMembers();
+    </script>
+</body>
+</html>
